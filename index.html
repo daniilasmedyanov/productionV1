@@ -660,10 +660,8 @@ function renderSvodkaGantt(data) {
     <div style="display:flex;gap:16px;padding:8px 16px;align-items:center;border-top:0.5px solid var(--border);flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)"><div style="width:20px;height:7px;border-radius:3px;background:#93c5fd"></div>План</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)"><div style="width:20px;height:7px;border-radius:3px;background:#22c55e"></div>Факт</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)"><div style="width:20px;height:7px;border-radius:3px;background:#93c5fd"></div>План</div>
-      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)"><div style="width:20px;height:7px;border-radius:3px;background:#22c55e"></div>Факт</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sec)"><div style="width:2px;height:14px;border-radius:1px;background:#ef4444;opacity:.6"></div>Сегодня</div>
-      <div style="margin-left:auto;font-size:10.5px;color:var(--text-hint)">На основе данных сварки · ${data.updated ? new Date(data.updated).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}) : ''}</div>
+      <div style="margin-left:auto;font-size:10.5px;color:var(--text-hint)">Обновлено ${data.updated ? new Date(data.updated).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}) : ''}</div>
     </div>
   </div>`;
 }
