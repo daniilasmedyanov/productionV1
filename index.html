@@ -455,7 +455,7 @@ function renderGantt(data) {
     rows += `<div style="display:flex;align-items:center;border-bottom:0.5px solid var(--border);min-height:48px" onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
       <!-- Левая колонка: имя поста -->
       <div style="width:${LEFT_W}px;min-width:${LEFT_W}px;padding:8px 14px;border-right:0.5px solid var(--border-med)">
-        <div style="font-size:12.5px;font-weight:500;color:var(--text)">${prefix}${esc(postName)}</div>
+        <div style="font-size:12.5px;font-weight:500;color:var(--text)">${prefix}${esc(displayPost(postName))}</div>
         <div style="font-size:11px;color:var(--text-hint);margin-top:1px">${p.opCount||0} оп. · ${fmtDate(p.startPlan)} → ${fmtDate(p.endPlan)}${devHtml}</div>
         ${hasFact ? `<div style="font-size:10.5px;color:var(--text-sec);margin-top:1px">факт: ${fmtDate(p.startFact)} → ${fmtDate(p.endFact)} · ${fmtDur(p.durationFact)}</div>` : ''}
       </div>
@@ -1336,7 +1336,7 @@ function renderDetail(tab, proj) {
         ${hasNum ? `<td class="col-num"></td>` : ''}
         <td style="font-weight:700;font-size:13px;padding:9px 12px;color:#3730a3">
           <span id="toggle_${gid}" style="display:inline-block;width:14px;margin-right:6px;color:#3730a3;font-size:11px;transition:transform .2s">▶</span>
-          📍 ${esc(group.name)}
+          📍 ${esc(displayPost(group.name))}
           <span style="font-size:11px;color:var(--text-hint);margin-left:6px;font-weight:400">${group.rows.length} оп.</span>
         </td>
         ${hasPost      ? `<td class="col-post"></td>` : ''}
@@ -1441,7 +1441,7 @@ function renderDetail(tab, proj) {
         ${hasNum ? `<td class="col-num"></td>` : ''}
         <td style="font-weight:500;font-size:13px;padding:9px 12px">
           <span id="toggle_${gid}" style="display:inline-block;width:14px;margin-right:6px;color:var(--text-hint);font-size:11px;transition:transform .2s">▶</span>
-          ${esc(group.name)}
+          ${esc(displayPost(group.name))}
           <span style="font-size:11px;color:var(--text-hint);margin-left:6px">${group.rows.length} оп.</span>
         </td>
         ${hasPost ? `<td class="col-post"></td>` : ''}
@@ -1547,6 +1547,14 @@ function renderMdfBadge(v) {
 }
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+// Подмена названий постов только для отображения. В Sheets — как есть.
+function displayPost(s) {
+  if (!s) return s;
+  const map = {
+    'Пост кузовной сборки': 'Для поста кузовной сборки',
+  };
+  return map[String(s).trim()] || s;
 }
 function switchGroup(tab, mode) {
   currentGroupMode[tab] = mode;
@@ -1839,7 +1847,7 @@ function renderPlanTable() {
     // Заголовок группы — клик сворачивает/разворачивает
     html += `<tr class="plan-group-header" data-group-name="${esc(groupLabel)}" onclick="togglePlanGroup('${esc(groupLabel).replace(/'/g,"\\'")}')" style="cursor:pointer">
       <td colspan="5" style="background:#f0f0ef;padding:9px 12px;font-weight:600;font-size:12.5px;color:var(--text);border-top:1px solid var(--border-med);border-bottom:0.5px solid var(--border-med);user-select:none">
-        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(groupLabel)}
+        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(displayPost(groupLabel))}
         <span style="font-size:11px;color:var(--text-hint);margin-left:8px;font-weight:400">${group.rows.length} оп.</span>
         ${dirtyInGroup ? `<span style="font-size:11px;color:#f59e0b;margin-left:8px;font-weight:500">● ${dirtyInGroup} изм.</span>` : ''}
       </td>
@@ -2245,7 +2253,7 @@ function renderFactTable() {
 
     html += `<tr class="fact-group-header" onclick="toggleFactGroup('${esc(groupLabel).replace(/'/g,"\\'")}')" style="cursor:pointer">
       <td colspan="6" style="background:#f0f0ef;padding:9px 12px;font-weight:600;font-size:12.5px;color:var(--text);border-top:1px solid var(--border-med);border-bottom:0.5px solid var(--border-med);user-select:none">
-        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(groupLabel)}
+        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(displayPost(groupLabel))}
         <span style="font-size:11px;color:var(--text-hint);margin-left:8px;font-weight:400">${group.rows.length} оп.</span>
         ${dirtyInGroup ? `<span style="font-size:11px;color:#f59e0b;margin-left:8px;font-weight:500">● ${dirtyInGroup} изм.</span>` : ''}
       </td>
