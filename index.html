@@ -129,6 +129,9 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .loader { display:inline-block; width:14px; height:14px; border:2px solid var(--border-med); border-top-color:var(--blue); border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:5px; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .state-msg { padding:48px 32px; text-align:center; color:var(--text-sec); }
+.big-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; gap:14px; }
+.big-loading .loader { width:32px; height:32px; border-width:3px; }
+.big-loading-text { font-size:13px; color:var(--text-sec); }
 
 /* ── Гант ── */
 .gantt-wrap { background:var(--surface); border:0.5px solid var(--border-med); border-radius:var(--radius); overflow:hidden; }
@@ -173,6 +176,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
   <div class="subtab" data-tab="sborka">Сборка</div>
   <div class="subtab" data-tab="poliuretan">Полиуретан</div>
   <div class="subtab" data-tab="kuzov">Кузовная</div>
+  <div class="subtab" data-tab="plan" style="margin-left:auto;color:var(--blue);font-weight:500">✎ План</div>
+  <div class="subtab" data-tab="fact" style="color:var(--green);font-weight:500">✓ Факт</div>
 </div>
 
 <div class="meta-bar">
@@ -181,11 +186,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 </div>
 
 <div class="content" id="content">
-  <div class="state-msg"><span class="loader"></span>Загружаем данные...</div>
+  <div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем данные...</div></div>
 </div>
 
 <script>
-const GAS = 'https://script.google.com/macros/s/AKfycbx46iWr8InhfYQiollLrTJd1rwsQzz76gUC8bolzySk4vquad6lBuqWIqB13_q7VNKF/exec';
+const GAS = 'https://script.google.com/macros/s/AKfycbwBp5A8c0jJ2Vx4eb0zJMe1r6JwvPsQlaTo8CTzjtx4pDHnUZ3xoW3wp49SA7JRwpFA/exec';
 
 const TAB_SHEETS = {
   formovka:   { t8: 'формовка Т8', s2: 'формовка S2' },
@@ -268,7 +273,7 @@ async function loadDetail(tab) {
     return;
   }
   document.getElementById('content').innerHTML =
-    `<div class="state-msg"><span class="loader"></span>Загружаем ${sheetName}...</div>`;
+    `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем ${sheetName}</div></div>`;
   try {
     const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(sheetName) + '&_=' + Date.now());
     const data = await r.json();
@@ -303,12 +308,16 @@ async function prefetchOtherProject(tab, activeProj) {
 function renderTab() {
   const el = document.getElementById('content');
   if (currentTab === 'svodka') {
-    // Сводка зависит от ganttData — грузим оба если нужно
-    if (!ganttData) { loadGantt(); return; }
+    if (!summaryData) { loadSummary(); return; }
+    if (!ganttData)   { loadGantt(); return; }
     el.innerHTML = renderSvodka(summaryData);
   } else if (currentTab === 'gantt') {
     if (!ganttData) { loadGantt(); return; }
     el.innerHTML = renderGantt(ganttData);
+  } else if (currentTab === 'plan') {
+    renderPlanPage();
+  } else if (currentTab === 'fact') {
+    renderFactPage();
   } else {
     const sheets = TAB_SHEETS[currentTab];
     const proj   = currentProj[currentTab] || 't8';
@@ -498,7 +507,7 @@ function renderSvodka(summData) {
   // Если ganttData ещё не загружен — показываем лоадер и грузим
   if (!ganttData) {
     loadGantt();
-    html += `<div class="state-msg"><span class="loader"></span>Загружаем данные Ганта...</div>`;
+    html += `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем данные Ганта...</div></div>`;
     return html;
   }
 
@@ -535,7 +544,7 @@ function renderSvodkaGantt(data) {
       if (p.endFact)   ef = maxD(ef,p.endFact)||p.endFact;
       totalOps += p.opCount||0;
     });
-    if (!sp && !ep) return; // пропускаем машины без данных
+    if (!sp && !ep && !sf && !ef) return; // пропускаем машины без данных
     const dev = (() => { const dp=parseD(ep),df=parseD(ef); if(!dp||!df)return null; return Math.round((df-dp)/86400000); })();
     unitRanges[unit] = { startPlan:sp, endPlan:ep, startFact:sf, endFact:ef, dev, totalOps };
   });
@@ -733,7 +742,7 @@ function renderDetail(tab, proj) {
       ${switcher}
     </div>`;
   if (!sheetName) { html += `<div class="state-msg">Нет листа для ${proj.toUpperCase()}</div></div>`; return html; }
-  if (!detail)    { html += `<div class="state-msg"><span class="loader"></span>Загрузка...</div></div>`; return html; }
+  if (!detail)    { html += `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загрузка...</div></div></div>`; return html; }
   if (detail.error) { html += `<div class="state-msg" style="color:var(--red)">${detail.error}</div></div>`; return html; }
 
   const units   = detail.units || [];
@@ -1596,6 +1605,932 @@ function getDemoData() {
       'сборка S2':{progress:{'S2-5':{pct:0},'S2-1':{pct:0},'S2-2':{pct:0},'S2-3':{pct:0},'S2-4':{pct:0}}},
     }}
   };
+}
+
+// ─────────────────────────────────────────────────────────────
+// СТРАНИЦА «ПЛАН» — ввод плановых дат для одной машины
+// ─────────────────────────────────────────────────────────────
+const PLAN_AREAS = {
+  formovka:   { t8: 'формовка Т8', s2: 'формовка S2' },
+  svarka:     { t8: 'сварка T8',   s2: 'сварка S2'   },
+  sborka:     { t8: 'сборка Т8',   s2: 'сборка S2'   },
+  poliuretan: { t8: 'Полиуретан Т8', s2: null         },
+  kuzov:      { t8: 'кузовная Т8',  s2: 'кузовная S2' },
+};
+
+let planState = {
+  area:  'formovka',
+  proj:  't8',
+  unit:  'Т8-5',
+  rows:  [],         // [{ rowNum, label, group, startPlan, endPlan, duration, dirty }]
+  loading: false,
+};
+
+function renderPlanPage() {
+  const el = document.getElementById('content');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-size:18px;font-weight:600">✎ Ввод плана</div>
+      <div id="plan-current-sheet" style="font-size:12px;color:var(--blue);background:var(--blue-bg);padding:3px 10px;border-radius:4px;font-weight:500"></div>
+      <div style="color:var(--text-hint);font-size:12.5px">Введи даты старта и конца плана для каждой операции. Длительность считается автоматически.</div>
+    </div>
+
+    <div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Участок</div>
+        <select id="plan-area" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff">
+          <option value="formovka">Формовка</option>
+          <option value="svarka">Сварка</option>
+          <option value="sborka">Сборка</option>
+          <option value="poliuretan">Полиуретан</option>
+          <option value="kuzov">Кузовная</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Проект</div>
+        <select id="plan-proj" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff">
+          <option value="t8">T8</option>
+          <option value="s2">S2</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Машина</div>
+        <select id="plan-unit" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff"></select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span id="plan-dirty-info" style="font-size:11.5px;color:var(--text-hint)"></span>
+        <button id="plan-save" onclick="savePlan()" style="padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer">Сохранить план</button>
+      </div>
+    </div>
+
+    <div id="plan-table-wrap"></div>
+  `;
+
+  // Восстановим состояние селектов
+  document.getElementById('plan-area').value = planState.area;
+  document.getElementById('plan-proj').value = planState.proj;
+  refreshPlanUnits();
+
+  // События селектов
+  document.getElementById('plan-area').onchange = (e) => {
+    planState.area = e.target.value;
+    refreshPlanUnits();
+    loadPlanRows();
+  };
+  document.getElementById('plan-proj').onchange = (e) => {
+    planState.proj = e.target.value;
+    refreshPlanUnits();
+    loadPlanRows();
+  };
+  document.getElementById('plan-unit').onchange = (e) => {
+    planState.unit = e.target.value;
+    loadPlanRows();
+  };
+
+  loadPlanRows();
+}
+
+function refreshPlanUnits() {
+  const units = planState.proj === 't8' ? UNITS_T8 : UNITS_S2;
+  const sel = document.getElementById('plan-unit');
+  sel.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+  if (!units.includes(planState.unit)) planState.unit = units[0];
+  sel.value = planState.unit;
+}
+
+async function loadPlanRows() {
+  const sheets = PLAN_AREAS[planState.area];
+  const sheet  = sheets && sheets[planState.proj];
+  const wrap   = document.getElementById('plan-table-wrap');
+
+  if (!sheet) {
+    wrap.innerHTML = `<div class="state-msg">Для ${planState.proj.toUpperCase()} нет листа на участке "${planState.area}"</div>`;
+    planState.rows = [];
+    updatePlanDirtyInfo();
+    return;
+  }
+
+  // Всегда грузим свежие данные — игнорируем кэш
+  wrap.innerHTML = `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем ${sheet}</div></div>`;
+  let detail;
+  try {
+    const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(sheet) + '&_=' + Date.now());
+    detail = await r.json();
+    detailCache[sheet] = detail;
+  } catch(e) {
+    wrap.innerHTML = `<div class="state-msg">Ошибка загрузки: ${e.message}</div>`;
+    return;
+  }
+
+  if (!detail.hasStartEnd) {
+    wrap.innerHTML = `<div class="state-msg">Лист "${sheet}" не поддерживает план-старт/план-конец</div>`;
+    planState.rows = [];
+    updatePlanDirtyInfo();
+    return;
+  }
+
+  const indicator = document.getElementById('plan-current-sheet');
+  if (indicator) indicator.textContent = `📋 ${sheet} · ${detail.rows.length} оп.`;
+
+  // Собираем строки для редактирования. Нужны row index из листа — но в detail у нас этого нет!
+  // Соберём по порядку: первая операция = первая строка после dataStartRow, и т.д.
+  // НО: detail.rows может содержать пропуски (пустые строки скипаются в buildDetail).
+  // Поэтому нам нужно либо переделать buildDetail чтобы возвращал rowNum, либо собирать здесь.
+  // ВРЕМЕННО: используем порядковый индекс — это сработает только если в листе нет пропусков.
+  // Правильное решение — добавить rowNum в buildDetail (см. TODO ниже).
+
+  // Получим конфиг с бэка — у нас он не приходит, поэтому используем хардкод dataStartRow
+  // Лучше попросить бэк отдавать sourceRow в каждой строке.
+  planState.rows = detail.rows.map((r, idx) => {
+    const d = (r.dates && r.dates[planState.unit]) || {};
+    return {
+      idx,
+      rowNum: r.sourceRow || null,  // нужен бэкенд-патч; пока попробуем sourceRow
+      label: r.label || '',
+      group: r.group || '',
+      post:  r.post  || '',
+      flat:  r.flat,
+      startPlan: d.startPlan || '',
+      endPlan:   d.endPlan   || '',
+      duration:  calcDuration(d.startPlan, d.endPlan),
+      origStart: d.startPlan || '',
+      origEnd:   d.endPlan   || '',
+      dirty: false,
+    };
+  });
+
+  renderPlanTable();
+  updatePlanDirtyInfo();
+}
+
+function calcDuration(start, end) {
+  if (!start || !end) return null;
+  const ds = parsePlanDate(start), de = parsePlanDate(end);
+  if (!ds || !de) return null;
+  return Math.round((de - ds) / 86400000);
+}
+
+function parsePlanDate(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!m) return null;
+  return new Date(+m[3], +m[2]-1, +m[1]);
+}
+
+function rusToIso(s) {
+  const m = String(s||'').match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!m) return '';
+  return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+}
+
+function isoToRus(s) {
+  const m = String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+function fmtPlanDate(d) {
+  if (!d) return '';
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}.${mm}.${d.getFullYear()}`;
+}
+
+function renderPlanTable() {
+  const rows = planState.rows;
+  const wrap = document.getElementById('plan-table-wrap');
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="state-msg">Нет операций</div>`;
+    return;
+  }
+
+  // Группировка только по постам (узлы игнорируем — слишком детальная разбивка)
+  const groupKey = r => r.post || r.group || '';
+
+  // Соберём список уникальных групп с их строками
+  const groups = [];
+  rows.forEach((r, i) => {
+    const g = groupKey(r);
+    let last = groups[groups.length - 1];
+    if (!last || last.name !== g) {
+      groups.push({ name: g, rows: [] });
+      last = groups[groups.length - 1];
+    }
+    last.rows.push({ ...r, _idx: i });
+  });
+
+  let html = `<div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);overflow:auto;max-height:calc(100vh - 220px)">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead style="background:var(--surface2);position:sticky;top:0;z-index:2">
+        <tr>
+          <th style="padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">Операция</th>
+          <th style="padding:8px 12px;width:130px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">Старт План</th>
+          <th style="padding:8px 12px;width:80px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">Дней</th>
+          <th style="padding:8px 12px;width:130px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">Конец План</th>
+          <th style="padding:8px 12px;width:50px;border-bottom:0.5px solid var(--border-med)"></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  groups.forEach((group, gi) => {
+    const gid = `plan_g_${gi}`;
+    const dirtyInGroup = group.rows.filter(r => r.dirty).length;
+    const groupLabel = group.name || '(без группы)';
+    const isCollapsed = planState.collapsed && planState.collapsed[groupLabel];
+    const chevron = isCollapsed ? '▶' : '▼';
+
+    // Заголовок группы — клик сворачивает/разворачивает
+    html += `<tr class="plan-group-header" data-group-name="${esc(groupLabel)}" onclick="togglePlanGroup('${esc(groupLabel).replace(/'/g,"\\'")}')" style="cursor:pointer">
+      <td colspan="5" style="background:#f0f0ef;padding:9px 12px;font-weight:600;font-size:12.5px;color:var(--text);border-top:1px solid var(--border-med);border-bottom:0.5px solid var(--border-med);user-select:none">
+        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(groupLabel)}
+        <span style="font-size:11px;color:var(--text-hint);margin-left:8px;font-weight:400">${group.rows.length} оп.</span>
+        ${dirtyInGroup ? `<span style="font-size:11px;color:#f59e0b;margin-left:8px;font-weight:500">● ${dirtyInGroup} изм.</span>` : ''}
+      </td>
+    </tr>`;
+
+    if (isCollapsed) return;
+
+    group.rows.forEach(r => {
+      const i = r._idx;
+      const dirtyMark = r.dirty ? '<span style="color:#f59e0b;margin-right:4px">●</span>' : '';
+      const isoStart = rusToIso(r.startPlan);
+      const isoEnd   = rusToIso(r.endPlan);
+
+      html += `<tr data-plan-row="${i}" style="border-bottom:0.5px solid var(--border)">
+        <td style="padding:7px 12px;padding-left:32px">${dirtyMark}${esc(r.label)}</td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="date" data-fld="start" value="${isoStart}" onchange="onPlanChange(${i},'start',isoToRus(this.value))"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="number" data-fld="duration" min="0" value="${r.duration ?? ''}" onchange="onPlanChange(${i},'duration',this.value)"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="date" data-fld="end" value="${isoEnd}" onchange="onPlanChange(${i},'end',isoToRus(this.value))"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <button onclick="planFromPrev(${i})" title="Старт = конец предыдущей"
+                  style="padding:4px 6px;background:transparent;border:0.5px solid var(--border-med);border-radius:4px;cursor:pointer;font-size:11px">↩</button>
+        </td>
+      </tr>`;
+    });
+  });
+
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
+}
+
+function togglePlanGroup(name) {
+  if (!planState.collapsed) planState.collapsed = {};
+  planState.collapsed[name] = !planState.collapsed[name];
+  renderPlanTable();
+}
+
+function onPlanChange(idx, field, value) {
+  const r = planState.rows[idx];
+  if (!r) return;
+
+  if (field === 'start') {
+    r.startPlan = value.trim();
+    // Если задана длительность — пересчитаем конец
+    if (r.duration !== null && r.duration !== '' && parsePlanDate(r.startPlan)) {
+      const d = parsePlanDate(r.startPlan);
+      d.setDate(d.getDate() + Number(r.duration));
+      r.endPlan = fmtPlanDate(d);
+    } else {
+      r.duration = calcDuration(r.startPlan, r.endPlan);
+    }
+  } else if (field === 'end') {
+    r.endPlan = value.trim();
+    r.duration = calcDuration(r.startPlan, r.endPlan);
+  } else if (field === 'duration') {
+    r.duration = value === '' ? null : Number(value);
+    if (r.duration !== null && parsePlanDate(r.startPlan)) {
+      const d = parsePlanDate(r.startPlan);
+      d.setDate(d.getDate() + r.duration);
+      r.endPlan = fmtPlanDate(d);
+    }
+  }
+
+  r.dirty = (r.startPlan !== r.origStart || r.endPlan !== r.origEnd);
+  r.changedStart = (r.startPlan !== r.origStart);
+  r.changedEnd   = (r.endPlan   !== r.origEnd);
+
+  // Точечно обновляем только инпуты этой строки
+  updatePlanRowInputs(idx);
+  updatePlanDirtyInfo();
+}
+
+function updatePlanRowInputs(idx) {
+  const r = planState.rows[idx];
+  if (!r) return;
+  const tr = document.querySelector(`tr[data-plan-row="${idx}"]`);
+  if (!tr) return;
+
+  const startInput = tr.querySelector('input[data-fld="start"]');
+  const endInput   = tr.querySelector('input[data-fld="end"]');
+  const durInput   = tr.querySelector('input[data-fld="duration"]');
+
+  if (startInput && document.activeElement !== startInput) startInput.value = rusToIso(r.startPlan);
+  if (endInput   && document.activeElement !== endInput)   endInput.value   = rusToIso(r.endPlan);
+  if (durInput   && document.activeElement !== durInput)   durInput.value   = r.duration ?? '';
+
+  const labelCell = tr.querySelector('td:first-child');
+  if (labelCell) {
+    const has = labelCell.querySelector('.plan-dirty-dot');
+    if (r.dirty && !has) {
+      const dot = document.createElement('span');
+      dot.className = 'plan-dirty-dot';
+      dot.style.cssText = 'color:#f59e0b;margin-right:4px';
+      dot.textContent = '●';
+      labelCell.insertBefore(dot, labelCell.firstChild);
+    } else if (!r.dirty && has) {
+      has.remove();
+    }
+  }
+}
+
+function planFromPrev(idx) {
+  if (idx === 0) return;
+  const prev = planState.rows[idx - 1];
+  if (!prev.endPlan) {
+    alert('У предыдущей операции не задан конец плана');
+    return;
+  }
+  onPlanChange(idx, 'start', prev.endPlan);
+}
+
+function updatePlanDirtyInfo() {
+  const dirty = planState.rows.filter(r => r.dirty).length;
+  const el = document.getElementById('plan-dirty-info');
+  if (el) el.textContent = dirty > 0 ? `Изменено: ${dirty} оп.` : 'Изменений нет';
+  const btn = document.getElementById('plan-save');
+  if (btn) btn.disabled = dirty === 0;
+}
+
+async function savePlan() {
+  const dirty = planState.rows.filter(r => r.dirty);
+  if (!dirty.length) {
+    alert('Нет изменений');
+    return;
+  }
+
+  const pin = prompt(`Введите PIN для подтверждения сохранения\n(${dirty.length} операций будет обновлено)`);
+  if (pin === null) return;
+
+  const sheets = PLAN_AREAS[planState.area];
+  const sheet  = sheets[planState.proj];
+
+  // Проверка — у нас должны быть rowNum
+  const missingRow = dirty.find(r => !r.rowNum);
+  if (missingRow) {
+    alert('Внимание: фронт не получил sourceRow от бэка.\nНужно обновить utils.gs (см. инструкцию).\n\nОперация без rowNum: ' + missingRow.label);
+    return;
+  }
+
+  // Проверка конфликтов
+  document.getElementById('plan-save').textContent = 'Проверка...';
+  document.getElementById('plan-save').disabled = true;
+  let conflictCheck;
+  try {
+    conflictCheck = await checkConflicts(sheet, dirty, 'plan', planState.unit);
+  } catch(e) {
+    document.getElementById('plan-save').textContent = 'Сохранить план';
+    document.getElementById('plan-save').disabled = false;
+    alert('Не удалось проверить конфликты: ' + e.message);
+    return;
+  }
+
+  if (conflictCheck.conflicts.length) {
+    const ok = confirm(
+      `⚠ В Google Sheets уже изменили ${conflictCheck.conflicts.length} из ваших ${dirty.length} операций ` +
+      `(возможно, кто-то правил в таблице):\n\n` +
+      describeConflicts(conflictCheck.conflicts) +
+      `\n\n— OK → перезаписать своими значениями\n— Отмена → отменить сохранение и обновить данные`
+    );
+    if (!ok) {
+      document.getElementById('plan-save').textContent = 'Сохранить план';
+      document.getElementById('plan-save').disabled = false;
+      delete detailCache[sheet];
+      loadPlanRows();
+      return;
+    }
+  }
+
+  const updates = dirty.map(r => ({
+    row: r.rowNum,
+    startPlan: r.startPlan || '',
+    endPlan:   r.endPlan   || '',
+  }));
+
+  document.getElementById('plan-save').textContent = 'Сохраняем...';
+
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'savePlan',
+        pin,
+        sheet,
+        unit: planState.unit,
+        updates,
+      }),
+    });
+    const result = await r.json();
+
+    if (result.error) {
+      alert('Ошибка: ' + result.error);
+    } else {
+      alert(`✓ Сохранено ${result.written} ячеек`);
+      // Обновим оригиналы и сбросим dirty
+      dirty.forEach(r => {
+        r.origStart = r.startPlan;
+        r.origEnd   = r.endPlan;
+        r.changedStart = false;
+        r.changedEnd   = false;
+        r.dirty = false;
+      });
+      // Очистим все виды кэша
+      delete detailCache[sheet];
+      ganttData = null;
+      summaryData = null;
+      renderPlanTable();
+      updatePlanDirtyInfo();
+    }
+  } catch(e) {
+    alert('Сетевая ошибка: ' + e.message);
+  } finally {
+    document.getElementById('plan-save').textContent = 'Сохранить план';
+    document.getElementById('plan-save').disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// СТРАНИЦА «ФАКТ» — ввод фактических дат для мастеров
+// (структура копирует «План», но пишет в startFact/endFact)
+// ═══════════════════════════════════════════════════════════════
+
+let factState = {
+  area:  'formovka',
+  proj:  't8',
+  unit:  'Т8-5',
+  rows:  [],
+};
+
+function renderFactPage() {
+  const el = document.getElementById('content');
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-size:18px;font-weight:600">✓ Ввод факта</div>
+      <div id="fact-current-sheet" style="font-size:12px;color:var(--green);background:var(--green-bg);padding:3px 10px;border-radius:4px;font-weight:500"></div>
+      <div style="color:var(--text-hint);font-size:12.5px">Отметьте даты, когда операция фактически началась и закончилась.</div>
+    </div>
+
+    <div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Участок</div>
+        <select id="fact-area" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff">
+          <option value="formovka">Формовка</option>
+          <option value="svarka">Сварка</option>
+          <option value="sborka">Сборка</option>
+          <option value="poliuretan">Полиуретан</option>
+          <option value="kuzov">Кузовная</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Проект</div>
+        <select id="fact-proj" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff">
+          <option value="t8">T8</option>
+          <option value="s2">S2</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--text-sec);margin-bottom:4px;text-transform:uppercase">Машина</div>
+        <select id="fact-unit" style="padding:6px 10px;border:0.5px solid var(--border-med);border-radius:6px;font-size:13px;background:#fff"></select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span id="fact-dirty-info" style="font-size:11.5px;color:var(--text-hint)"></span>
+        <button id="fact-save" onclick="saveFact()" style="padding:8px 16px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer">Сохранить факт</button>
+      </div>
+    </div>
+
+    <div id="fact-table-wrap"></div>
+  `;
+
+  document.getElementById('fact-area').value = factState.area;
+  document.getElementById('fact-proj').value = factState.proj;
+  refreshFactUnits();
+
+  document.getElementById('fact-area').onchange = (e) => {
+    factState.area = e.target.value;
+    refreshFactUnits();
+    loadFactRows();
+  };
+  document.getElementById('fact-proj').onchange = (e) => {
+    factState.proj = e.target.value;
+    refreshFactUnits();
+    loadFactRows();
+  };
+  document.getElementById('fact-unit').onchange = (e) => {
+    factState.unit = e.target.value;
+    loadFactRows();
+  };
+
+  loadFactRows();
+}
+
+function refreshFactUnits() {
+  const units = factState.proj === 't8' ? UNITS_T8 : UNITS_S2;
+  const sel = document.getElementById('fact-unit');
+  sel.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+  if (!units.includes(factState.unit)) factState.unit = units[0];
+  sel.value = factState.unit;
+}
+
+async function loadFactRows() {
+  const sheets = PLAN_AREAS[factState.area]; // переиспользуем тот же маппинг
+  const sheet  = sheets && sheets[factState.proj];
+  const wrap   = document.getElementById('fact-table-wrap');
+
+  if (!sheet) {
+    wrap.innerHTML = `<div class="state-msg">Для ${factState.proj.toUpperCase()} нет листа на участке "${factState.area}"</div>`;
+    factState.rows = [];
+    updateFactDirtyInfo();
+    return;
+  }
+
+  wrap.innerHTML = `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем ${sheet}</div></div>`;
+  let detail;
+  try {
+    const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(sheet) + '&_=' + Date.now());
+    detail = await r.json();
+    detailCache[sheet] = detail;
+  } catch(e) {
+    wrap.innerHTML = `<div class="state-msg">Ошибка загрузки: ${e.message}</div>`;
+    return;
+  }
+
+  if (!detail.hasStartEnd) {
+    wrap.innerHTML = `<div class="state-msg">Лист "${sheet}" не поддерживает старт/конец факта</div>`;
+    factState.rows = [];
+    updateFactDirtyInfo();
+    return;
+  }
+
+  const indicator = document.getElementById('fact-current-sheet');
+  if (indicator) indicator.textContent = `📋 ${sheet} · ${detail.rows.length} оп.`;
+
+  factState.rows = detail.rows.map((r, idx) => {
+    const d = (r.dates && r.dates[factState.unit]) || {};
+    return {
+      idx,
+      rowNum: r.sourceRow || null,
+      label: r.label || '',
+      group: r.group || '',
+      post:  r.post  || '',
+      flat:  r.flat,
+      startPlan: d.startPlan || '',  // показываем как подсказку
+      endPlan:   d.endPlan   || '',
+      startFact: d.startFact || '',
+      endFact:   d.endFact   || '',
+      duration:  calcDuration(d.startFact, d.endFact),
+      origStart: d.startFact || '',
+      origEnd:   d.endFact   || '',
+      dirty: false,
+    };
+  });
+
+  renderFactTable();
+  updateFactDirtyInfo();
+}
+
+function renderFactTable() {
+  const rows = factState.rows;
+  const wrap = document.getElementById('fact-table-wrap');
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="state-msg">Нет операций</div>`;
+    return;
+  }
+
+  // Группировка только по постам (узлы игнорируем — слишком детальная разбивка)
+  const groupKey = r => r.post || r.group || '';
+
+  const groups = [];
+  rows.forEach((r, i) => {
+    const g = groupKey(r);
+    let last = groups[groups.length - 1];
+    if (!last || last.name !== g) {
+      groups.push({ name: g, rows: [] });
+      last = groups[groups.length - 1];
+    }
+    last.rows.push({ ...r, _idx: i });
+  });
+
+  let html = `<div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);overflow:auto;max-height:calc(100vh - 220px)">
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead style="background:var(--surface2);position:sticky;top:0;z-index:2">
+        <tr>
+          <th style="padding:8px 12px;text-align:left;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">Операция</th>
+          <th style="padding:8px 12px;width:110px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--text-hint);font-weight:500">План (для справки)</th>
+          <th style="padding:8px 12px;width:130px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--green);font-weight:500;background:var(--green-bg)">Старт факт</th>
+          <th style="padding:8px 12px;width:80px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--green);font-weight:500;background:var(--green-bg)">Дней</th>
+          <th style="padding:8px 12px;width:130px;text-align:center;border-bottom:0.5px solid var(--border-med);font-size:10.5px;text-transform:uppercase;color:var(--green);font-weight:500;background:var(--green-bg)">Конец факт</th>
+          <th style="padding:8px 12px;width:50px;border-bottom:0.5px solid var(--border-med)"></th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  groups.forEach((group, gi) => {
+    const dirtyInGroup = group.rows.filter(r => r.dirty).length;
+    const groupLabel = group.name || '(без группы)';
+    const isCollapsed = factState.collapsed && factState.collapsed[groupLabel];
+    const chevron = isCollapsed ? '▶' : '▼';
+
+    html += `<tr class="fact-group-header" onclick="toggleFactGroup('${esc(groupLabel).replace(/'/g,"\\'")}')" style="cursor:pointer">
+      <td colspan="6" style="background:#f0f0ef;padding:9px 12px;font-weight:600;font-size:12.5px;color:var(--text);border-top:1px solid var(--border-med);border-bottom:0.5px solid var(--border-med);user-select:none">
+        <span style="display:inline-block;width:14px;color:var(--text-hint);font-size:10px;margin-right:4px">${chevron}</span>${esc(groupLabel)}
+        <span style="font-size:11px;color:var(--text-hint);margin-left:8px;font-weight:400">${group.rows.length} оп.</span>
+        ${dirtyInGroup ? `<span style="font-size:11px;color:#f59e0b;margin-left:8px;font-weight:500">● ${dirtyInGroup} изм.</span>` : ''}
+      </td>
+    </tr>`;
+
+    if (isCollapsed) return;
+
+    group.rows.forEach(r => {
+      const i = r._idx;
+      const dirtyMark = r.dirty ? '<span style="color:#f59e0b;margin-right:4px">●</span>' : '';
+      const isoStart = rusToIso(r.startFact);
+      const isoEnd   = rusToIso(r.endFact);
+
+      let planHint = '';
+      if (r.startPlan || r.endPlan) {
+        planHint = `<span style="font-size:10.5px;color:var(--text-hint)">${r.startPlan || '—'} → ${r.endPlan || '—'}</span>`;
+      } else {
+        planHint = `<span style="font-size:10.5px;color:var(--text-hint)">—</span>`;
+      }
+
+      html += `<tr data-fact-row="${i}" style="border-bottom:0.5px solid var(--border)">
+        <td style="padding:7px 12px;padding-left:32px">${dirtyMark}${esc(r.label)}</td>
+        <td style="padding:5px 8px;text-align:center">${planHint}</td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="date" data-fld="start" value="${isoStart}" onchange="onFactChange(${i},'start',isoToRus(this.value))"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="number" data-fld="duration" min="0" value="${r.duration ?? ''}" onchange="onFactChange(${i},'duration',this.value)"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <input type="date" data-fld="end" value="${isoEnd}" onchange="onFactChange(${i},'end',isoToRus(this.value))"
+                 style="width:100%;padding:5px 8px;border:0.5px solid var(--border-med);border-radius:4px;font-size:12px;text-align:center;font-family:inherit">
+        </td>
+        <td style="padding:5px 8px;text-align:center">
+          <button onclick="factFromPrev(${i})" title="Старт = конец предыдущей"
+                  style="padding:4px 6px;background:transparent;border:0.5px solid var(--border-med);border-radius:4px;cursor:pointer;font-size:11px">↩</button>
+        </td>
+      </tr>`;
+    });
+  });
+
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
+}
+
+function toggleFactGroup(name) {
+  if (!factState.collapsed) factState.collapsed = {};
+  factState.collapsed[name] = !factState.collapsed[name];
+  renderFactTable();
+}
+
+function onFactChange(idx, field, value) {
+  const r = factState.rows[idx];
+  if (!r) return;
+
+  if (field === 'start') {
+    r.startFact = value.trim();
+    if (r.duration !== null && r.duration !== '' && parsePlanDate(r.startFact)) {
+      const d = parsePlanDate(r.startFact);
+      d.setDate(d.getDate() + Number(r.duration));
+      r.endFact = fmtPlanDate(d);
+    } else {
+      r.duration = calcDuration(r.startFact, r.endFact);
+    }
+  } else if (field === 'end') {
+    r.endFact = value.trim();
+    r.duration = calcDuration(r.startFact, r.endFact);
+  } else if (field === 'duration') {
+    r.duration = value === '' ? null : Number(value);
+    if (r.duration !== null && parsePlanDate(r.startFact)) {
+      const d = parsePlanDate(r.startFact);
+      d.setDate(d.getDate() + r.duration);
+      r.endFact = fmtPlanDate(d);
+    }
+  }
+
+  r.dirty = (r.startFact !== r.origStart || r.endFact !== r.origEnd);
+  r.changedStart = (r.startFact !== r.origStart);
+  r.changedEnd   = (r.endFact   !== r.origEnd);
+  updateFactRowInputs(idx);
+  updateFactDirtyInfo();
+}
+
+function updateFactRowInputs(idx) {
+  const r = factState.rows[idx];
+  if (!r) return;
+  const tr = document.querySelector(`tr[data-fact-row="${idx}"]`);
+  if (!tr) return;
+
+  const startInput = tr.querySelector('input[data-fld="start"]');
+  const endInput   = tr.querySelector('input[data-fld="end"]');
+  const durInput   = tr.querySelector('input[data-fld="duration"]');
+
+  if (startInput && document.activeElement !== startInput) startInput.value = rusToIso(r.startFact);
+  if (endInput   && document.activeElement !== endInput)   endInput.value   = rusToIso(r.endFact);
+  if (durInput   && document.activeElement !== durInput)   durInput.value   = r.duration ?? '';
+
+  const labelCell = tr.querySelector('td:first-child');
+  if (labelCell) {
+    const has = labelCell.querySelector('.fact-dirty-dot');
+    if (r.dirty && !has) {
+      const dot = document.createElement('span');
+      dot.className = 'fact-dirty-dot';
+      dot.style.cssText = 'color:#f59e0b;margin-right:4px';
+      dot.textContent = '●';
+      labelCell.insertBefore(dot, labelCell.firstChild);
+    } else if (!r.dirty && has) {
+      has.remove();
+    }
+  }
+}
+
+function factFromPrev(idx) {
+  if (idx === 0) return;
+  const prev = factState.rows[idx - 1];
+  if (!prev.endFact) {
+    alert('У предыдущей операции не задан конец факта');
+    return;
+  }
+  onFactChange(idx, 'start', prev.endFact);
+}
+
+function updateFactDirtyInfo() {
+  const dirty = factState.rows.filter(r => r.dirty).length;
+  const el = document.getElementById('fact-dirty-info');
+  if (el) el.textContent = dirty > 0 ? `Изменено: ${dirty} оп.` : 'Изменений нет';
+  const btn = document.getElementById('fact-save');
+  if (btn) btn.disabled = dirty === 0;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Проверка конфликтов перед записью.
+// Перечитывает свежие данные из листа и сравнивает с origStart/origEnd,
+// которые мы зафиксировали при загрузке страницы.
+// Возвращает: { conflicts: [...], freshDetail }
+// conflicts — массив { row, label, kind, mine, theirs } для строк где
+//   в Sheets что-то поменялось с момента загрузки, причём именно в тех
+//   полях, которые мы собираемся писать (dirty).
+// kind: 'startPlan' | 'endPlan' | 'startFact' | 'endFact'
+// ─────────────────────────────────────────────────────────────
+async function checkConflicts(sheet, dirty, mode, unit) {
+  const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(sheet) + '&_=' + Date.now());
+  const fresh = await r.json();
+  const conflicts = [];
+  const startField = mode === 'fact' ? 'startFact' : 'startPlan';
+  const endField   = mode === 'fact' ? 'endFact'   : 'endPlan';
+
+  dirty.forEach(row => {
+    // Найдём ту же строку в свежих данных
+    const freshRow = (fresh.rows || []).find(fr => fr.sourceRow === row.rowNum);
+    if (!freshRow) return;
+    const freshDates = (freshRow.dates && freshRow.dates[unit]) || {};
+    // Проверяем — изменилось ли значение, которое было при загрузке
+    if (row.changedStart && (freshDates[startField] || '') !== (row.origStart || '')) {
+      conflicts.push({
+        row: row.rowNum, label: row.label, kind: startField,
+        mine: row[startField] || '(пусто)',
+        theirs: freshDates[startField] || '(пусто)',
+        original: row.origStart || '(пусто)',
+      });
+    }
+    if (row.changedEnd && (freshDates[endField] || '') !== (row.origEnd || '')) {
+      conflicts.push({
+        row: row.rowNum, label: row.label, kind: endField,
+        mine: row[endField] || '(пусто)',
+        theirs: freshDates[endField] || '(пусто)',
+        original: row.origEnd || '(пусто)',
+      });
+    }
+  });
+
+  return { conflicts, fresh };
+}
+
+function describeConflicts(conflicts) {
+  const fieldNames = {
+    startPlan: 'старт плана', endPlan: 'конец плана',
+    startFact: 'старт факта', endFact: 'конец факта'
+  };
+  return conflicts.slice(0, 5).map(c =>
+    `• "${c.label}" — ${fieldNames[c.kind]}:\n` +
+    `   было: ${c.original}\n` +
+    `   в Sheets уже: ${c.theirs}\n` +
+    `   твоё: ${c.mine}`
+  ).join('\n\n') + (conflicts.length > 5 ? `\n\n…и ещё ${conflicts.length - 5}` : '');
+}
+
+async function saveFact() {
+  const dirty = factState.rows.filter(r => r.dirty);
+  if (!dirty.length) {
+    alert('Нет изменений');
+    return;
+  }
+
+  const sheets = PLAN_AREAS[factState.area];
+  const sheet  = sheets[factState.proj];
+
+  const missingRow = dirty.find(r => !r.rowNum);
+  if (missingRow) {
+    alert('Ошибка: фронт не получил sourceRow от бэка. Обновите utils.gs в GAS.\nОперация без rowNum: ' + missingRow.label);
+    return;
+  }
+
+  // Сначала проверяем конфликты
+  document.getElementById('fact-save').textContent = 'Проверка...';
+  document.getElementById('fact-save').disabled = true;
+  let conflictCheck;
+  try {
+    conflictCheck = await checkConflicts(sheet, dirty, 'fact', factState.unit);
+  } catch(e) {
+    document.getElementById('fact-save').textContent = 'Сохранить факт';
+    document.getElementById('fact-save').disabled = false;
+    alert('Не удалось проверить конфликты: ' + e.message);
+    return;
+  }
+
+  if (conflictCheck.conflicts.length) {
+    const ok = confirm(
+      `⚠ В Google Sheets уже изменили ${conflictCheck.conflicts.length} из ваших ${dirty.length} операций ` +
+      `(возможно, кто-то правил в таблице):\n\n` +
+      describeConflicts(conflictCheck.conflicts) +
+      `\n\n— OK → перезаписать своими значениями\n— Отмена → отменить сохранение и обновить данные`
+    );
+    if (!ok) {
+      document.getElementById('fact-save').textContent = 'Сохранить факт';
+      document.getElementById('fact-save').disabled = false;
+      // Освежим страницу — пусть мастер увидит реальное состояние
+      delete detailCache[sheet];
+      loadFactRows();
+      return;
+    }
+  }
+
+  const updates = dirty.map(r => ({
+    row: r.rowNum,
+    startFact: r.startFact || '',
+    endFact:   r.endFact   || '',
+  }));
+
+  document.getElementById('fact-save').textContent = 'Сохраняем...';
+
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'saveFact',
+        sheet,
+        unit: factState.unit,
+        updates,
+      }),
+    });
+    const result = await r.json();
+
+    if (result.error) {
+      alert('Ошибка: ' + result.error);
+    } else {
+      alert(`✓ Сохранено ${result.written} ячеек`);
+      dirty.forEach(r => {
+        r.origStart = r.startFact;
+        r.origEnd   = r.endFact;
+        r.changedStart = false;
+        r.changedEnd   = false;
+        r.dirty = false;
+      });
+      delete detailCache[sheet];
+      ganttData = null;
+      summaryData = null;
+      renderFactTable();
+      updateFactDirtyInfo();
+    }
+  } catch(e) {
+    alert('Сетевая ошибка: ' + e.message);
+  } finally {
+    document.getElementById('fact-save').textContent = 'Сохранить факт';
+    document.getElementById('fact-save').disabled = false;
+  }
 }
 </script>
 </body>
