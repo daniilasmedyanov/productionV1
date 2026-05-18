@@ -1807,17 +1807,14 @@ function renderPlanTable() {
   // Группировка только по постам (узлы игнорируем — слишком детальная разбивка)
   const groupKey = r => r.post || r.group || '';
 
-  // Соберём список уникальных групп с их строками
-  const groups = [];
+  // Соберём список уникальных групп с их строками (по уникальному имени, не по соседству)
+  const groupMap = new Map();
   rows.forEach((r, i) => {
     const g = groupKey(r);
-    let last = groups[groups.length - 1];
-    if (!last || last.name !== g) {
-      groups.push({ name: g, rows: [] });
-      last = groups[groups.length - 1];
-    }
-    last.rows.push({ ...r, _idx: i });
+    if (!groupMap.has(g)) groupMap.set(g, { name: g, rows: [] });
+    groupMap.get(g).rows.push({ ...r, _idx: i });
   });
+  const groups = Array.from(groupMap.values());
 
   let html = `<div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);overflow:auto;max-height:calc(100vh - 220px)">
     <table style="width:100%;border-collapse:collapse;font-size:13px">
@@ -2218,16 +2215,13 @@ function renderFactTable() {
   // Группировка только по постам (узлы игнорируем — слишком детальная разбивка)
   const groupKey = r => r.post || r.group || '';
 
-  const groups = [];
+  const groupMap = new Map();
   rows.forEach((r, i) => {
     const g = groupKey(r);
-    let last = groups[groups.length - 1];
-    if (!last || last.name !== g) {
-      groups.push({ name: g, rows: [] });
-      last = groups[groups.length - 1];
-    }
-    last.rows.push({ ...r, _idx: i });
+    if (!groupMap.has(g)) groupMap.set(g, { name: g, rows: [] });
+    groupMap.get(g).rows.push({ ...r, _idx: i });
   });
+  const groups = Array.from(groupMap.values());
 
   let html = `<div style="background:var(--surface);border:0.5px solid var(--border-med);border-radius:var(--radius);overflow:auto;max-height:calc(100vh - 220px)">
     <table style="width:100%;border-collapse:collapse;font-size:13px">
