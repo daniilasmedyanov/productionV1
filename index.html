@@ -23,8 +23,15 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .subtab.active { color:var(--blue); font-weight:500; border-bottom-color:var(--blue); }
 .meta-bar { padding:10px 32px; display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--text-hint); }
 .meta-dot { width:6px; height:6px; border-radius:50%; background:#22c55e; display:inline-block; margin-right:5px; }
-.refresh-btn { display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--text-sec); font-size:12px; padding:4px 10px; border-radius:var(--radius-sm); border:0.5px solid var(--border-med); background:var(--surface); }
+.refresh-btn { display:flex; align-items:center; gap:5px; cursor:pointer; color:var(--text-sec); font-size:12px; padding:4px 10px; border-radius:var(--radius-sm); border:0.5px solid var(--border-med); background:var(--surface); position:relative; }
 .refresh-btn:hover { background:var(--surface2); }
+.refresh-dot { width:7px; height:7px; border-radius:50%; background:#f59e0b; display:none; margin-right:2px; box-shadow:0 0 0 0 rgba(245,158,11,0.5); animation:dotPulse 2s infinite; }
+.refresh-dot.show { display:inline-block; }
+@keyframes dotPulse {
+  0%   { box-shadow:0 0 0 0 rgba(245,158,11,0.5); }
+  70%  { box-shadow:0 0 0 5px rgba(245,158,11,0); }
+  100% { box-shadow:0 0 0 0 rgba(245,158,11,0); }
+}
 .content { padding:0 32px 48px; }
 .kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
 .kpi-card { background:var(--surface); border:0.5px solid var(--border-med); border-radius:var(--radius); padding:14px 16px; }
@@ -101,6 +108,86 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .col-post  { width:150px; font-size:11px; color:var(--text-sec); overflow:hidden; }
 .col-wear  { width:110px; font-size:11px; color:var(--text-sec); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .col-date  { width:88px; text-align:center; }
+.plan-cell { cursor:pointer; transition:background .1s; }
+.plan-cell:hover { background:#eff4ff !important; outline:1px dashed var(--blue); outline-offset:-2px; }
+
+/* Date popup calendar */
+.date-popup {
+  position: fixed;
+  background: #fff;
+  border: 1px solid var(--border-med);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.08);
+  padding: 10px;
+  z-index: 10000;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12.5px;
+  user-select: none;
+  animation: dpFadeIn .12s ease-out;
+}
+@keyframes dpFadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+.dp-header { display:flex; align-items:center; gap:4px; margin-bottom:8px; padding:0 2px; }
+.dp-nav {
+  width: 24px; height: 24px;
+  border: none; background: transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px; color: var(--text-sec);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s;
+}
+.dp-nav:hover { background: var(--surface2); color: var(--text); }
+.dp-title { flex: 1; text-align: center; font-weight: 600; font-size: 13px; color: var(--text); }
+.dp-dows { display: grid; grid-template-columns: repeat(7, 30px); gap:1px; margin-bottom:2px; }
+.dp-dow {
+  font-size: 10px;
+  text-align: center;
+  color: var(--text-hint);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 4px 0;
+  font-weight: 500;
+}
+.dp-grid { display: grid; grid-template-columns: repeat(7, 30px); gap:1px; }
+.dp-cell {
+  width: 30px; height: 28px;
+  border: none; background: transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .08s, color .08s;
+  font-family: inherit;
+}
+.dp-cell:hover { background: var(--blue-bg); color: var(--blue); }
+.dp-cell.dim { color: #c7c7c2; }
+.dp-cell.weekend { color: #c44; }
+.dp-cell.today { box-shadow: inset 0 0 0 1px var(--blue); font-weight: 600; }
+.dp-cell.current { background: var(--blue); color: #fff !important; font-weight: 600; }
+.dp-cell.current:hover { background: var(--blue); }
+.dp-footer {
+  display: flex; gap: 4px; margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.dp-action {
+  flex: 1;
+  padding: 6px 8px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background .1s;
+}
+.dp-action:hover { background: var(--border-med); }
+.dp-action.dp-today { color: var(--blue); }
+.dp-action.dp-clear { color: var(--red); }
+.dp-action.dp-cancel { color: var(--text-sec); }
 .badge-wear { display:inline-block; background:#fef9c3; color:#854d0e; border:0.5px solid #fde68a; padding:1px 6px; border-radius:4px; font-size:10.5px; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
 .badge-wear.moral { background:#fae8ff; color:#86198f; border-color:#f0abfc; }
 .badge-mdf { display:inline-block; background:#dbeafe; color:#1e40af; border:0.5px solid #93c5fd; padding:1px 6px; border-radius:4px; font-size:10.5px; white-space:nowrap; max-width:100px; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
@@ -132,6 +219,62 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .big-loading { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; gap:14px; }
 .big-loading .loader { width:32px; height:32px; border-width:3px; }
 .big-loading-text { font-size:13px; color:var(--text-sec); }
+
+/* Большой дружелюбный лоадер для долгих операций */
+.page-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 14px;
+  animation: plFadeIn .2s ease-out;
+}
+@keyframes plFadeIn { from{opacity:0} to{opacity:1} }
+.page-loader-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border-med);
+  border-top-color: var(--blue);
+  border-right-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-bottom: 8px;
+} } }
+.page-loader-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -.2px;
+}
+.page-loader-sub {
+  font-size: 13px;
+  color: var(--text-sec);
+  margin-bottom: 8px;
+}
+.page-loader-bar {
+  width: 240px;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.page-loader-bar-fill {
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), #60a5fa, var(--blue));
+  background-size: 200% 100%;
+  border-radius: 10px;
+  animation: plBar 1.6s ease-in-out infinite;
+}
+@keyframes plBar {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(150%); }
+  100% { transform: translateX(150%); }
+}
 
 /* ── Гант ── */
 .gantt-wrap { background:var(--surface); border:0.5px solid var(--border-med); border-radius:var(--radius); overflow:hidden; }
@@ -177,12 +320,11 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
   <div class="subtab" data-tab="poliuretan">Полиуретан</div>
   <div class="subtab" data-tab="kuzov">Кузовная</div>
   <div class="subtab" data-tab="plan" style="margin-left:auto;color:var(--blue);font-weight:500">✎ План</div>
-  <div class="subtab" data-tab="fact" style="color:var(--green);font-weight:500">✓ Факт</div>
 </div>
 
 <div class="meta-bar">
   <span id="meta-status"><span class="loader"></span>загрузка...</span>
-  <button class="refresh-btn" onclick="refresh()">↺ Обновить</button>
+  <button class="refresh-btn" id="refresh-btn" onclick="refresh()"><span class="refresh-dot" id="refresh-dot"></span>↺ Обновить</button>
 </div>
 
 <div class="content" id="content">
@@ -225,13 +367,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function refresh() {
   detailCache = {};
+  summaryData = null;
+  ganttData = null;
+  clearStale();
   if (currentTab === 'svodka') loadSummary();
   else if (currentTab === 'gantt') { ganttData = null; loadGantt(); }
   else loadDetail(currentTab);
 }
 
+// Помечаем что есть несинхронизированные правки — оранжевая точка на «Обновить»
+function markStale() {
+  const dot = document.getElementById('refresh-dot');
+  if (dot) dot.classList.add('show');
+}
+function clearStale() {
+  const dot = document.getElementById('refresh-dot');
+  if (dot) dot.classList.remove('show');
+}
+
 async function loadGantt() {
   setMeta('loading');
+  if (currentTab === 'svodka' || currentTab === 'gantt') {
+    document.getElementById('content').innerHTML = renderBigLoader('Загружаем гант', 'опрашиваю 8 листов в Google Sheets — пара секунд');
+  }
   try {
     const r = await fetch(GAS + '?action=gantt&_=' + Date.now());
     ganttData = await r.json();
@@ -246,6 +404,9 @@ async function loadGantt() {
 
 async function loadSummary() {
   setMeta('loading');
+  if (currentTab === 'svodka') {
+    document.getElementById('content').innerHTML = renderBigLoader('Загружаем сводку', 'опрашиваю 8 листов в Google Sheets — пара секунд');
+  }
   try {
     const r = await fetch(GAS + '?action=summary&_=' + Date.now());
     summaryData = await r.json();
@@ -257,6 +418,16 @@ async function loadSummary() {
     renderTab();
     setMeta('error');
   }
+}
+
+// Большой дружелюбный лоадер для долгих операций (сводка / гант)
+function renderBigLoader(title, subtitle) {
+  return `<div class="page-loader">
+    <div class="page-loader-spinner"></div>
+    <div class="page-loader-title">${esc(title)}</div>
+    <div class="page-loader-sub">${esc(subtitle)}</div>
+    <div class="page-loader-bar"><div class="page-loader-bar-fill"></div></div>
+  </div>`;
 }
 
 async function loadDetail(tab) {
@@ -273,7 +444,7 @@ async function loadDetail(tab) {
     return;
   }
   document.getElementById('content').innerHTML =
-    `<div class="big-loading"><span class="loader"></span><div class="big-loading-text">Загружаем ${sheetName}</div></div>`;
+    renderBigLoader('Загружаем участок', sheetName);
   try {
     const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(sheetName) + '&_=' + Date.now());
     const data = await r.json();
@@ -300,8 +471,10 @@ async function prefetchOtherProject(tab, activeProj) {
   try {
     const r = await fetch(GAS + '?action=detail&sheet=' + encodeURIComponent(otherSheet) + '&_=' + Date.now());
     detailCache[otherSheet] = await r.json();
-    // Перерисовываем только если пользователь всё ещё на этой вкладке
-    if (currentTab === tab) renderTab();
+    // ВАЖНО: НЕ перерисовываем таблицу здесь!
+    // Раньше тут был renderTab(), который затирал раскрытые группы
+    // (пользователь раскрыл узел → фоновая догрузка → re-render → всё схлопнулось).
+    // Второй проект нужен только для ганта — он подхватит кэш при переключении.
   } catch(e) { /* тихо игнорируем */ }
 }
 
@@ -316,8 +489,6 @@ function renderTab() {
     el.innerHTML = renderGantt(ganttData);
   } else if (currentTab === 'plan') {
     renderPlanPage();
-  } else if (currentTab === 'fact') {
-    renderFactPage();
   } else {
     const sheets = TAB_SHEETS[currentTab];
     const proj   = currentProj[currentTab] || 't8';
@@ -1282,21 +1453,24 @@ function renderDetail(tab, proj) {
 
   // Хелпер: строки дат для строки операции
   function opDateCells(row) {
+    const sr = row.sourceRow || '';
+    const pc = (field, val) => // plan-cell wrapper
+      `class="col-date plan-cell" data-sheet="${esc(sheetName)}" data-row="${sr}" data-unit="UNIT" data-field="${field}" data-current="${esc(val||'')}" ondblclick="startPlanEdit(this)" title="Двойной клик — изменить план"`;
     return se
       ? units.map(u => {
           const d=(row.dates&&row.dates[u])||{};
           const dev = d.deviation;
           const devHtml = dev !== null && dev !== undefined
             ? `<span style="font-size:10px;margin-left:3px;color:${dev>0?'var(--red)':dev<0?'var(--green)':'var(--text-hint)'}">${dev>0?'+':''}${dev}д</span>` : '';
-          return `<td class="col-date" style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.startPlan||'')}</td>
+          return `<td ${pc('startPlan', d.startPlan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.startPlan||'')}</td>
                   <td class="col-date">${renderFactBadge(d.startFact||'',d.startPlan||'')}</td>
-                  <td class="col-date">${renderPlanBadge(d.endPlan||'')}</td>
+                  <td ${pc('endPlan', d.endPlan).replace('UNIT', esc(u))}>${renderPlanBadge(d.endPlan||'')}</td>
                   <td class="col-date">${renderFactBadge(d.endFact||'',d.endPlan||'')}${devHtml}</td>`;
         }).join('')
       : pf
       ? units.map(u => {
           const d=(row.dates&&row.dates[u])||{};
-          return `<td class="col-date" style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.plan||'')}</td>
+          return `<td ${pc('plan', d.plan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.plan||'')}</td>
                   <td class="col-date">${renderFactBadge(d.fact||'',d.plan||'')}</td>`;
         }).join('')
       : units.map(u=>`<td class="col-date">${renderDateBadge((row.dates&&row.dates[u])||'')}</td>`).join('');
@@ -1332,7 +1506,7 @@ function renderDetail(tab, proj) {
     if (groupMode === 'post') {
       // ── Уровень 1: строка поста ──────────────────────────────
       const postAgg = aggregateGroup(group.rows);
-      html += `<tr class="group-header-row" onclick="toggleGroup('${gid}')" style="cursor:pointer;background:#e8eaf6">
+      html += `<tr class="group-header-row" onclick="toggleGroup('${gid}', event)" style="cursor:pointer;background:#e8eaf6">
         ${hasNum ? `<td class="col-num"></td>` : ''}
         <td style="font-weight:700;font-size:13px;padding:9px 12px;color:#3730a3">
           <span id="toggle_${gid}" style="display:inline-block;width:14px;margin-right:6px;color:#3730a3;font-size:11px;transition:transform .2s">▶</span>
@@ -1384,7 +1558,7 @@ function renderDetail(tab, proj) {
         }
 
         // ── Уровень 2: строка узла (дочерняя поста) ────────────
-        html += `<tr class="group-header-row" data-group="${gid}" data-level="node" onclick="toggleGroup('${nodeGid}')" style="display:none;cursor:pointer">
+        html += `<tr class="group-header-row" data-group="${gid}" data-level="node" onclick="toggleGroup('${nodeGid}', event)" style="display:none;cursor:pointer">
           ${hasNum ? `<td class="col-num"></td>` : ''}
           <td style="font-weight:500;font-size:12.5px;padding:8px 12px 8px 28px">
             <span id="toggle_${nodeGid}" style="display:inline-block;width:14px;margin-right:6px;color:var(--text-hint);font-size:11px;transition:transform .2s">▶</span>
@@ -1437,7 +1611,7 @@ function renderDetail(tab, proj) {
     } else {
       // ── Режим "по узлам" — как раньше ───────────────────────
       const agg = aggregateGroup(group.rows);
-      html += `<tr class="group-header-row" onclick="toggleGroup('${gid}')" style="cursor:pointer">
+      html += `<tr class="group-header-row" onclick="toggleGroup('${gid}', event)" style="cursor:pointer">
         ${hasNum ? `<td class="col-num"></td>` : ''}
         <td style="font-weight:500;font-size:13px;padding:9px 12px">
           <span id="toggle_${gid}" style="display:inline-block;width:14px;margin-right:6px;color:var(--text-hint);font-size:11px;transition:transform .2s">▶</span>
@@ -1475,19 +1649,25 @@ function renderDetail(tab, proj) {
   return html;
 }
 
-function toggleGroup(gid) {
+let _toggleLock = {};
+function toggleGroup(gid, ev) {
+  // Гасим всплытие чтобы клик не обработался дважды (span внутри строки)
+  if (ev) { ev.stopPropagation(); }
+
   const toggle = document.getElementById(`toggle_${gid}`);
-  const isOpen = toggle && toggle.style.transform === 'rotate(90deg)';
+  // Состояние читаем из РЕАЛЬНОГО DOM — видна ли первая дочерняя строка
+  const childRows = document.querySelectorAll(`tr[data-group="${gid}"]`);
+  if (!childRows.length) return;
+  const isOpen = childRows[0].style.display !== 'none';
 
   if (isOpen) {
-    // Закрываем рекурсивно — находим все дочерние gid и скрываем их строки
+    // Закрываем рекурсивно
     const visited = new Set();
     function closeGroup(g) {
       if (visited.has(g)) return;
       visited.add(g);
       document.querySelectorAll(`tr[data-group="${g}"]`).forEach(r => {
         r.style.display = 'none';
-        // Если это узловая строка с собственным toggle — сбрасываем его
         const childToggle = r.querySelector('[id^="toggle_"]');
         if (childToggle) {
           const childGid = childToggle.id.replace('toggle_', '');
@@ -1499,10 +1679,8 @@ function toggleGroup(gid) {
     closeGroup(gid);
     if (toggle) toggle.style.transform = '';
   } else {
-    // Открываем — показываем только прямых детей
-    document.querySelectorAll(`tr[data-group="${gid}"]`).forEach(r => {
-      r.style.display = '';
-    });
+    // Открываем — показываем прямых детей
+    childRows.forEach(r => { r.style.display = ''; });
     if (toggle) toggle.style.transform = 'rotate(90deg)';
   }
 }
@@ -1555,6 +1733,275 @@ function displayPost(s) {
     'Пост кузовной сборки': 'Для поста кузовной сборки',
   };
   return map[String(s).trim()] || s;
+}
+
+// ─────────────────────────────────────────────────────────────
+// INLINE-РЕДАКТИРОВАНИЕ ФАКТА В DETAIL-ТАБЛИЦАХ
+// Двойной клик по ячейке факта → input → сохранение через GAS
+// ─────────────────────────────────────────────────────────────
+
+let inlineEditActive = false;
+const lastUndo = { snapshot: null }; // для кнопки "Отменить" в toast
+
+function startPlanEdit(td) {
+  if (inlineEditActive) return;
+  if (!td.dataset.row) {
+    showToast('Эту ячейку нельзя редактировать (нет привязки к строке)', 'error');
+    return;
+  }
+  inlineEditActive = true;
+
+  const sheet   = td.dataset.sheet;
+  const rowNum  = +td.dataset.row;
+  const unit    = td.dataset.unit;
+  const field   = td.dataset.field;
+  const current = td.dataset.current || '';
+
+  // Запоминаем какой месяц показать первым: текущее значение или сегодня
+  const initialDate = parsePlanDate(current) || new Date();
+  let viewYear  = initialDate.getFullYear();
+  let viewMonth = initialDate.getMonth(); // 0-11
+
+  // Подсветка ячейки чтобы было видно что редактируется
+  td.style.outline = '2px solid var(--blue)';
+  td.style.outlineOffset = '-2px';
+
+  // Создаём попап
+  const popup = document.createElement('div');
+  popup.id = 'date-popup';
+  popup.className = 'date-popup';
+
+  // Закрытие
+  const close = () => {
+    inlineEditActive = false;
+    td.style.outline = '';
+    td.style.outlineOffset = '';
+    popup.remove();
+    document.removeEventListener('mousedown', onOutsideClick, true);
+    document.removeEventListener('keydown', onEsc);
+  };
+
+  const onOutsideClick = (e) => {
+    if (!popup.contains(e.target) && e.target !== td && !td.contains(e.target)) close();
+  };
+  const onEsc = (e) => { if (e.key === 'Escape') close(); };
+
+  // Сохранение значения и закрытие попапа
+  const pickDate = async (rusDate) => {
+    if (rusDate === current) { close(); return; }
+    // Заглушка пока сохраняем
+    td.innerHTML = `<span style="font-size:10px;color:var(--text-hint)">сохраняю...</span>`;
+    close();
+    const ok = await savePlanValue(sheet, rowNum, unit, field, rusDate);
+    if (ok) {
+      lastUndo.snapshot = { sheet, rowNum, unit, field, oldRus: current, newRus: rusDate, isPlan: true };
+      td.dataset.current = rusDate;
+      td.innerHTML = renderPlanBadge(rusDate);
+      markStale();
+      showToast(`✓ План сохранён: ${rusDate || '(пусто)'}`, 'ok', () => undoLastSave(td));
+    } else {
+      td.dataset.current = current;
+      td.innerHTML = renderPlanBadge(current);
+    }
+  };
+
+  // Рендер месяца
+  const renderMonth = () => {
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+    // Какой день недели первого числа (0=Sun, делаем 0=Mon)
+    const first = new Date(viewYear, viewMonth, 1);
+    let firstDow = first.getDay() - 1;
+    if (firstDow < 0) firstDow = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysPrev    = new Date(viewYear, viewMonth, 0).getDate();
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const cur   = parsePlanDate(current);
+
+    let cells = '';
+    let dayIdx = 0;
+    for (let row = 0; row < 6; row++) {
+      for (let col = 0; col < 7; col++) {
+        let d, m, y, dim = false;
+        if (dayIdx < firstDow) {
+          d = daysPrev - firstDow + dayIdx + 1; m = viewMonth - 1; y = viewYear; dim = true;
+        } else if (dayIdx - firstDow >= daysInMonth) {
+          d = dayIdx - firstDow - daysInMonth + 1; m = viewMonth + 1; y = viewYear; dim = true;
+        } else {
+          d = dayIdx - firstDow + 1; m = viewMonth; y = viewYear;
+        }
+        // Нормализация
+        const cellDate = new Date(y, m, d);
+        const isToday   = cellDate.getTime() === today.getTime();
+        const isCurrent = cur && cellDate.getTime() === cur.setHours(0,0,0,0);
+        const isWeekend = col >= 5;
+        let cls = 'dp-cell';
+        if (dim)       cls += ' dim';
+        if (isToday)   cls += ' today';
+        if (isCurrent) cls += ' current';
+        if (isWeekend && !dim) cls += ' weekend';
+        const rusStr = fmtPlanDate(cellDate);
+        cells += `<button class="${cls}" data-rus="${rusStr}">${d}</button>`;
+        dayIdx++;
+      }
+    }
+
+    popup.innerHTML = `
+      <div class="dp-header">
+        <button class="dp-nav" data-step="-12" title="−1 год">«</button>
+        <button class="dp-nav" data-step="-1" title="−1 месяц">‹</button>
+        <div class="dp-title">${monthNames[viewMonth]} ${viewYear}</div>
+        <button class="dp-nav" data-step="1" title="+1 месяц">›</button>
+        <button class="dp-nav" data-step="12" title="+1 год">»</button>
+      </div>
+      <div class="dp-dows">${dayNames.map(n=>`<div class="dp-dow">${n}</div>`).join('')}</div>
+      <div class="dp-grid">${cells}</div>
+      <div class="dp-footer">
+        <button class="dp-action dp-today">Сегодня</button>
+        ${current ? `<button class="dp-action dp-clear">Очистить</button>` : ''}
+        <button class="dp-action dp-cancel">Отмена</button>
+      </div>
+    `;
+
+    // Навешиваем хэндлеры
+    popup.querySelectorAll('.dp-nav').forEach(b => b.onclick = () => {
+      const step = +b.dataset.step;
+      viewMonth += step;
+      while (viewMonth < 0)  { viewMonth += 12; viewYear--; }
+      while (viewMonth > 11) { viewMonth -= 12; viewYear++; }
+      renderMonth();
+    });
+    popup.querySelectorAll('.dp-cell').forEach(b => b.onclick = () => pickDate(b.dataset.rus));
+    popup.querySelector('.dp-today').onclick = () => pickDate(fmtPlanDate(new Date()));
+    const clearBtn = popup.querySelector('.dp-clear');
+    if (clearBtn) clearBtn.onclick = () => pickDate('');
+    popup.querySelector('.dp-cancel').onclick = close;
+  };
+
+  document.body.appendChild(popup);
+  renderMonth();
+
+  // Позиционирование под ячейкой (или над, если внизу не хватает места)
+  const rect = td.getBoundingClientRect();
+  const popupRect = popup.getBoundingClientRect();
+  let top  = rect.bottom + 4;
+  let left = rect.left + rect.width / 2 - popupRect.width / 2;
+  if (top + popupRect.height > window.innerHeight - 8) {
+    top = rect.top - popupRect.height - 4;
+  }
+  if (left < 8) left = 8;
+  if (left + popupRect.width > window.innerWidth - 8) left = window.innerWidth - popupRect.width - 8;
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+
+  // Закрытие по клику вне и Esc
+  setTimeout(() => {
+    document.addEventListener('mousedown', onOutsideClick, true);
+    document.addEventListener('keydown', onEsc);
+  }, 50);
+}
+
+// Отдельный хелпер для сохранения факта (используется в startInlineEdit и undoLastSave)
+async function saveFactValue(sheet, rowNum, unit, field, rusValue) {
+  const payload = { action:'saveFact', sheet, unit, updates:[{ row: rowNum }] };
+  if (field === 'startFact') payload.updates[0].startFact = rusValue;
+  else if (field === 'endFact') payload.updates[0].endFact = rusValue;
+  else if (field === 'fact')   { payload.updates[0].startFact = rusValue; payload.updates[0].endFact = rusValue; }
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const result = await r.json();
+    if (result.error) {
+      showToast('Ошибка: ' + result.error, 'error');
+      return false;
+    }
+    // НЕ сбрасываем кэш — только помечаем что сводка/гант устарели.
+    // Пользователь обновит вручную кнопкой «Обновить».
+    markStale();
+    return true;
+  } catch(e) {
+    showToast('Сетевая ошибка: ' + e.message, 'error');
+    return false;
+  }
+}
+
+// Сохранение плана inline (без PIN)
+async function savePlanValue(sheet, rowNum, unit, field, rusValue) {
+  const payload = { action:'savePlan', sheet, unit, updates:[{ row: rowNum }] };
+  if (field === 'startPlan') payload.updates[0].startPlan = rusValue;
+  else if (field === 'endPlan') payload.updates[0].endPlan = rusValue;
+  else if (field === 'plan')   { payload.updates[0].startPlan = rusValue; payload.updates[0].endPlan = rusValue; }
+  try {
+    const r = await fetch(GAS, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    const result = await r.json();
+    if (result.error) {
+      showToast('Ошибка: ' + result.error, 'error');
+      return false;
+    }
+    markStale();
+    return true;
+  } catch(e) {
+    showToast('Сетевая ошибка: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function undoLastSave(td) {
+  if (!lastUndo.snapshot) return;
+  const s = lastUndo.snapshot;
+  const ok = s.isPlan
+    ? await savePlanValue(s.sheet, s.rowNum, s.unit, s.field, s.oldRus)
+    : await saveFactValue(s.sheet, s.rowNum, s.unit, s.field, s.oldRus);
+  if (!ok) return;
+  if (td) {
+    td.dataset.current = s.oldRus;
+    td.innerHTML = s.isPlan ? renderPlanBadge(s.oldRus) : renderFactBadge(s.oldRus, '');
+  }
+  showToast('↩ Отменено', 'ok');
+  lastUndo.snapshot = null;
+}
+
+// Toast снизу справа. type: 'ok' | 'error'. onUndo — опциональный callback на «Отменить»
+let toastTimer = null;
+function showToast(message, type='ok', onUndo=null) {
+  let toast = document.getElementById('inline-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'inline-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1a1a;color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,0.3);z-index:10000;display:flex;align-items:center;gap:14px;max-width:400px;transition:transform .2s,opacity .2s;transform:translateY(20px);opacity:0';
+    document.body.appendChild(toast);
+  }
+  const bg = type === 'error' ? '#991b1b' : '#1a1a1a';
+  toast.style.background = bg;
+  toast.innerHTML = `<span>${esc(message)}</span>`;
+  if (onUndo) {
+    const btn = document.createElement('button');
+    btn.textContent = 'Отменить';
+    btn.style.cssText = 'background:transparent;color:#93c5fd;border:none;cursor:pointer;font-size:12px;font-weight:500;text-decoration:underline;padding:0';
+    btn.onclick = () => { hideToast(); onUndo(); };
+    toast.appendChild(btn);
+  }
+  requestAnimationFrame(() => {
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+  });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(hideToast, onUndo ? 5000 : 2500);
+}
+function hideToast() {
+  const toast = document.getElementById('inline-toast');
+  if (!toast) return;
+  toast.style.transform = 'translateY(20px)';
+  toast.style.opacity = '0';
 }
 function switchGroup(tab, mode) {
   currentGroupMode[tab] = mode;
@@ -1982,9 +2429,6 @@ async function savePlan() {
     return;
   }
 
-  const pin = prompt(`Введите PIN для подтверждения сохранения\n(${dirty.length} операций будет обновлено)`);
-  if (pin === null) return;
-
   const sheets = PLAN_AREAS[planState.area];
   const sheet  = sheets[planState.proj];
 
@@ -2038,7 +2482,6 @@ async function savePlan() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'savePlan',
-        pin,
         sheet,
         unit: planState.unit,
         updates,
@@ -2058,10 +2501,8 @@ async function savePlan() {
         r.changedEnd   = false;
         r.dirty = false;
       });
-      // Очистим все виды кэша
-      delete detailCache[sheet];
-      ganttData = null;
-      summaryData = null;
+      // Не сбрасываем кэш сводки/ганта — помечаем устаревшим (точка на «Обновить»)
+      markStale();
       renderPlanTable();
       updatePlanDirtyInfo();
     }
@@ -2521,9 +2962,7 @@ async function saveFact() {
         r.changedEnd   = false;
         r.dirty = false;
       });
-      delete detailCache[sheet];
-      ganttData = null;
-      summaryData = null;
+      markStale();
       renderFactTable();
       updateFactDirtyInfo();
     }
