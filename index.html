@@ -110,6 +110,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
 .col-date  { width:88px; text-align:center; }
 .plan-cell { cursor:pointer; transition:background .1s; }
 .plan-cell:hover { background:#eff4ff !important; outline:1px dashed var(--blue); outline-offset:-2px; }
+.fact-cell { cursor:pointer; transition:background .1s; }
+.fact-cell:hover { background:#ecfdf5 !important; outline:1px dashed #22c55e; outline-offset:-2px; }
 
 /* Date popup calendar */
 .date-popup {
@@ -318,7 +320,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; backg
   <div class="subtab" data-tab="svarka">Сварка</div>
   <div class="subtab" data-tab="sborka">Сборка</div>
   <div class="subtab" data-tab="poliuretan">Полиуретан</div>
-  <div class="subtab" data-tab="kuzov">Кузовная</div>
+  <div class="subtab" data-tab="kuzov">Кузовной</div>
   <div class="subtab" data-tab="plan" style="margin-left:auto;color:var(--blue);font-weight:500">✎ План</div>
 </div>
 
@@ -339,7 +341,7 @@ const TAB_SHEETS = {
   svarka:     { t8: 'сварка T8',   s2: 'сварка S2'   },
   sborka:     { t8: 'сборка Т8',   s2: 'сборка S2'   },
   poliuretan: { t8: 'Полиуретан Т8', s2: null         },
-  kuzov:      { t8: 'кузовная Т8',  s2: 'кузовная S2' },
+  kuzov:      { t8: 'Кузовной T8',  s2: 'Кузовной S2' },
 };
 
 const UNITS_T8 = ['Т8-5','Т8-6','Т8-7'];
@@ -662,7 +664,7 @@ function renderGantt(data) {
 function sheetLabel(s) {
   const map = {
     'формовка Т8':'Форм.','сварка T8':'Свар.','сборка Т8':'Сбор.',
-    'Полиуретан Т8':'Полиур.','кузовная Т8':'Куз.',
+    'Полиуретан Т8':'Полиур.','Кузовной T8':'Куз.',
     'формовка S2':'Форм.','сварка S2':'Свар.','сборка S2':'Сбор.',
   };
   return map[s] || s;
@@ -850,8 +852,8 @@ function renderProjectBlock(proj, projData, units) {
   const areas = projData.areas || {};
   const cls   = proj === 'T8' ? 't8' : 's2';
   const tabMap = proj === 'T8'
-    ? { 'Формовка':'формовка Т8','Сварка':'сварка T8','Сборка':'сборка Т8','Полиуретан':'Полиуретан Т8','Кузовная':'кузовная Т8' }
-    : { 'Формовка':'формовка S2','Сварка':'сварка S2','Сборка':'сборка S2','Полиуретан':null,'Кузовная':'кузовная S2' };
+    ? { 'Формовка':'формовка Т8','Сварка':'сварка T8','Сборка':'сборка Т8','Полиуретан':'Полиуретан Т8','Кузовной':'Кузовной T8' }
+    : { 'Формовка':'формовка S2','Сварка':'сварка S2','Сборка':'сборка S2','Полиуретан':null,'Кузовной':'Кузовной S2' };
   let rows = '';
   Object.entries(tabMap).forEach(([label, sheetName]) => {
     if (!sheetName) {
@@ -866,7 +868,7 @@ function renderProjectBlock(proj, projData, units) {
     const pcts   = sheet && sheet.progress ? units.map(u => sheet.progress[u] ? sheet.progress[u].pct : 0) : [];
     const pct    = pcts.length ? Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length) : null;
     const pctNum = pct !== null ? pct : 0;
-    const tabKey = {'Формовка':'formovka','Сварка':'svarka','Сборка':'sborka','Полиуретан':'poliuretan','Кузовная':'kuzov'}[label];
+    const tabKey = {'Формовка':'formovka','Сварка':'svarka','Сборка':'sborka','Полиуретан':'poliuretan','Кузовной':'kuzov'}[label];
     rows += `<div class="area-row" onclick="goToTab('${tabKey}','${cls}')">
       <span class="area-name">${label} ${proj}</span>
       <div class="area-prog-wrap">
@@ -890,7 +892,7 @@ function renderProjectBlock(proj, projData, units) {
 
 function renderDetail(tab, proj) {
   const sheets    = TAB_SHEETS[tab];
-  const tabLabels = { formovka:'Формовка', svarka:'Сварка', sborka:'Сборка', poliuretan:'Полиуретан', kuzov:'Кузовная' };
+  const tabLabels = { formovka:'Формовка', svarka:'Сварка', sborka:'Сборка', poliuretan:'Полиуретан', kuzov:'Кузовной' };
   const tabLabel  = tabLabels[tab] || tab;
   const hasT8 = !!(sheets && sheets.t8);
   const hasS2 = !!(sheets && sheets.s2);
@@ -1454,24 +1456,31 @@ function renderDetail(tab, proj) {
   // Хелпер: строки дат для строки операции
   function opDateCells(row) {
     const sr = row.sourceRow || '';
-    const pc = (field, val) => // plan-cell wrapper
-      `class="col-date plan-cell" data-sheet="${esc(sheetName)}" data-row="${sr}" data-unit="UNIT" data-field="${field}" data-current="${esc(val||'')}" ondblclick="startPlanEdit(this)" title="Двойной клик — изменить план"`;
+    const mode = window.EDIT_MODE || 'plan'; // 'plan' (директор) или 'fact' (мастер)
+    const planCell = (field, val) =>
+      mode === 'plan'
+        ? `class="col-date plan-cell" data-sheet="${esc(sheetName)}" data-row="${sr}" data-unit="UNIT" data-field="${field}" data-current="${esc(val||'')}" ondblclick="startPlanEdit(this)" title="Двойной клик — изменить план"`
+        : `class="col-date"`;
+    const factCell = (field, val) =>
+      mode === 'fact'
+        ? `class="col-date fact-cell" data-sheet="${esc(sheetName)}" data-row="${sr}" data-unit="UNIT" data-field="${field}" data-current="${esc(val||'')}" ondblclick="startFactEdit(this)" title="Двойной клик — отметить факт"`
+        : `class="col-date"`;
     return se
       ? units.map(u => {
           const d=(row.dates&&row.dates[u])||{};
           const dev = d.deviation;
           const devHtml = dev !== null && dev !== undefined
             ? `<span style="font-size:10px;margin-left:3px;color:${dev>0?'var(--red)':dev<0?'var(--green)':'var(--text-hint)'}">${dev>0?'+':''}${dev}д</span>` : '';
-          return `<td ${pc('startPlan', d.startPlan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.startPlan||'')}</td>
-                  <td class="col-date">${renderFactBadge(d.startFact||'',d.startPlan||'')}</td>
-                  <td ${pc('endPlan', d.endPlan).replace('UNIT', esc(u))}>${renderPlanBadge(d.endPlan||'')}</td>
-                  <td class="col-date">${renderFactBadge(d.endFact||'',d.endPlan||'')}${devHtml}</td>`;
+          return `<td ${planCell('startPlan', d.startPlan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.startPlan||'')}</td>
+                  <td ${factCell('startFact', d.startFact).replace('UNIT', esc(u))}>${renderFactBadge(d.startFact||'',d.startPlan||'')}</td>
+                  <td ${planCell('endPlan', d.endPlan).replace('UNIT', esc(u))}>${renderPlanBadge(d.endPlan||'')}</td>
+                  <td ${factCell('endFact', d.endFact).replace('UNIT', esc(u))}>${renderFactBadge(d.endFact||'',d.endPlan||'')}${devHtml}</td>`;
         }).join('')
       : pf
       ? units.map(u => {
           const d=(row.dates&&row.dates[u])||{};
-          return `<td ${pc('plan', d.plan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.plan||'')}</td>
-                  <td class="col-date">${renderFactBadge(d.fact||'',d.plan||'')}</td>`;
+          return `<td ${planCell('plan', d.plan).replace('UNIT', esc(u))} style="border-left:1.5px solid var(--border-med)">${renderPlanBadge(d.plan||'')}</td>
+                  <td ${factCell('fact', d.fact).replace('UNIT', esc(u))}>${renderFactBadge(d.fact||'',d.plan||'')}</td>`;
         }).join('')
       : units.map(u=>`<td class="col-date">${renderDateBadge((row.dates&&row.dates[u])||'')}</td>`).join('');
   }
@@ -1743,7 +1752,10 @@ function displayPost(s) {
 let inlineEditActive = false;
 const lastUndo = { snapshot: null }; // для кнопки "Отменить" в toast
 
-function startPlanEdit(td) {
+function startPlanEdit(td) { startDateEdit(td, 'plan'); }
+function startFactEdit(td) { startDateEdit(td, 'fact'); }
+
+function startDateEdit(td, mode) {
   if (inlineEditActive) return;
   if (!td.dataset.row) {
     showToast('Эту ячейку нельзя редактировать (нет привязки к строке)', 'error');
@@ -1756,6 +1768,8 @@ function startPlanEdit(td) {
   const unit    = td.dataset.unit;
   const field   = td.dataset.field;
   const current = td.dataset.current || '';
+  const isPlan  = mode === 'plan';
+  const accent  = isPlan ? 'var(--blue)' : 'var(--green)';
 
   // Запоминаем какой месяц показать первым: текущее значение или сегодня
   const initialDate = parsePlanDate(current) || new Date();
@@ -1763,7 +1777,7 @@ function startPlanEdit(td) {
   let viewMonth = initialDate.getMonth(); // 0-11
 
   // Подсветка ячейки чтобы было видно что редактируется
-  td.style.outline = '2px solid var(--blue)';
+  td.style.outline = '2px solid ' + accent;
   td.style.outlineOffset = '-2px';
 
   // Создаём попап
@@ -1789,19 +1803,20 @@ function startPlanEdit(td) {
   // Сохранение значения и закрытие попапа
   const pickDate = async (rusDate) => {
     if (rusDate === current) { close(); return; }
-    // Заглушка пока сохраняем
     td.innerHTML = `<span style="font-size:10px;color:var(--text-hint)">сохраняю...</span>`;
     close();
-    const ok = await savePlanValue(sheet, rowNum, unit, field, rusDate);
+    const ok = isPlan
+      ? await savePlanValue(sheet, rowNum, unit, field, rusDate)
+      : await saveFactValue(sheet, rowNum, unit, field, rusDate);
     if (ok) {
-      lastUndo.snapshot = { sheet, rowNum, unit, field, oldRus: current, newRus: rusDate, isPlan: true };
+      lastUndo.snapshot = { sheet, rowNum, unit, field, oldRus: current, newRus: rusDate, isPlan };
       td.dataset.current = rusDate;
-      td.innerHTML = renderPlanBadge(rusDate);
+      td.innerHTML = isPlan ? renderPlanBadge(rusDate) : renderFactBadge(rusDate, '');
       markStale();
-      showToast(`✓ План сохранён: ${rusDate || '(пусто)'}`, 'ok', () => undoLastSave(td));
+      showToast(`✓ ${isPlan?'План':'Факт'} сохранён: ${rusDate || '(пусто)'}`, 'ok', () => undoLastSave(td));
     } else {
       td.dataset.current = current;
-      td.innerHTML = renderPlanBadge(current);
+      td.innerHTML = isPlan ? renderPlanBadge(current) : renderFactBadge(current, '');
     }
   };
 
@@ -2052,7 +2067,7 @@ function getDemoData() {
       'сварка T8':{progress:{'Т8-5':{pct:0},'Т8-6':{pct:0},'Т8-7':{pct:0}}},
       'сборка Т8':{progress:{'Т8-5':{pct:0},'Т8-6':{pct:0},'Т8-7':{pct:0}}},
       'Полиуретан Т8':{progress:{'Т8-5':{pct:0},'Т8-6':{pct:0},'Т8-7':{pct:0}}},
-      'кузовная Т8':{progress:{'Т8-5':{pct:0},'Т8-6':{pct:0},'Т8-7':{pct:0}}},
+      'Кузовной T8':{progress:{'Т8-5':{pct:0},'Т8-6':{pct:0},'Т8-7':{pct:0}}},
     }},
     s2:{units:UNITS_S2,areas:{
       'формовка S2':{progress:{'S2-5':{pct:2},'S2-1':{pct:2},'S2-2':{pct:2},'S2-3':{pct:2},'S2-4':{pct:2}}},
@@ -2070,7 +2085,7 @@ const PLAN_AREAS = {
   svarka:     { t8: 'сварка T8',   s2: 'сварка S2'   },
   sborka:     { t8: 'сборка Т8',   s2: 'сборка S2'   },
   poliuretan: { t8: 'Полиуретан Т8', s2: null         },
-  kuzov:      { t8: 'кузовная Т8',  s2: 'кузовная S2' },
+  kuzov:      { t8: 'Кузовной T8',  s2: 'Кузовной S2' },
 };
 
 let planState = {
@@ -2098,7 +2113,7 @@ function renderPlanPage() {
           <option value="svarka">Сварка</option>
           <option value="sborka">Сборка</option>
           <option value="poliuretan">Полиуретан</option>
-          <option value="kuzov">Кузовная</option>
+          <option value="kuzov">Кузовной</option>
         </select>
       </div>
       <div>
@@ -2543,7 +2558,7 @@ function renderFactPage() {
           <option value="svarka">Сварка</option>
           <option value="sborka">Сборка</option>
           <option value="poliuretan">Полиуретан</option>
-          <option value="kuzov">Кузовная</option>
+          <option value="kuzov">Кузовной</option>
         </select>
       </div>
       <div>
