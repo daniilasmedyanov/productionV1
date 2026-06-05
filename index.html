@@ -1032,9 +1032,16 @@ function renderDetail(tab, proj) {
       const fw=hasFact?Math.max(1,efP-sfP):0;
       const todayLine=todayPctD!==null?`<div style="position:absolute;left:${todayPctD}%;top:0;bottom:0;width:2px;background:#ef4444;opacity:.4;z-index:5"></div>`:'';
 
-      // Отклонение
+      // Отклонение — только когда у машины закрыты ВСЕ операции на этом листе
+      let allDoneArea = false;
+      if (summaryData) {
+        const projAreas = (proj==='t8' ? summaryData.t8 : summaryData.s2);
+        const areaKey = TAB_SHEETS[currentTab] && TAB_SHEETS[currentTab][proj];
+        const p = projAreas && projAreas.areas && projAreas.areas[areaKey] && projAreas.areas[areaKey].progress && projAreas.areas[areaKey].progress[u];
+        allDoneArea = p && p.total > 0 && p.filled >= p.total;
+      }
       const dp=parseDP(r.ep), df=parseDP(r.ef);
-      const dev = (dp&&df) ? Math.round((df-dp)/86400000) : null;
+      const dev = (allDoneArea && dp && df) ? Math.round((df-dp)/86400000) : null;
       const devHtml = dev!==null ? `<span style="font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;background:${dev>0?'#fee2e2':dev<0?'#dcfce7':'#f0fdf4'};color:${dev>0?'#dc2626':dev<0?'#16a34a':'#16a34a'};margin-left:4px">${dev>0?'+':''}${dev}д</span>` : '';
 
       return `<div style="display:flex;align-items:stretch;border-bottom:0.5px solid var(--border)">
@@ -1161,8 +1168,24 @@ function renderDetail(tab, proj) {
         const spP=toPctG(r.sp),epP=toPctG(r.ep),sfP=toPctG(r.sf),efP=toPctG(r.ef);
         const hasPlan=spP!==null&&epP!==null, hasFact=sfP!==null&&efP!==null;
         const pw=hasPlan?Math.max(0.5,epP-spP):0, fw=hasFact?Math.max(0.5,efP-sfP):0;
+
+        // Машина считается полностью закрытой когда у неё есть факт по ВСЕМ запланированным операциям
+        // (total == filled из подсчёта прогресса). Иначе счётчик отклонения вводит в заблуждение —
+        // показывает разницу от первой закрытой операции, хотя машина не готова.
+        let fullDone = false;
+        if (summaryData) {
+          const projAreas = (isT8 ? summaryData.t8 : summaryData.s2);
+          if (projAreas && projAreas.areas) {
+            let total=0, filled=0;
+            Object.values(projAreas.areas).forEach(area => {
+              const p = area && area.progress && area.progress[u];
+              if (p) { total += (p.total||0); filled += (p.filled||0); }
+            });
+            fullDone = total > 0 && filled >= total;
+          }
+        }
         const dp=parseDP(r.ep),df=parseDP(r.ef);
-        const dev=dp&&df?Math.round((df-dp)/86400000):null;
+        const dev = (fullDone && dp && df) ? Math.round((df-dp)/86400000) : null;
         const devHtml=dev!==null?` <span style="font-size:10px;font-weight:700;padding:1px 4px;border-radius:3px;background:${dev>0?'#fee2e2':'#dcfce7'};color:${dev>0?'#dc2626':'#16a34a'}">${dev>0?'+':''}${dev}д</span>`:'';
         return `<div style="display:flex;align-items:stretch;border-bottom:0.5px solid var(--border)" onmouseenter="this.style.background='#fafaf9'" onmouseleave="this.style.background=''">
           <div style="width:${LWG}px;min-width:${LWG}px;padding:8px 12px;border-right:0.5px solid var(--border-med);display:flex;flex-direction:column;justify-content:center;gap:3px">
@@ -1309,8 +1332,11 @@ function renderDetail(tab, proj) {
           });
         }
 
-        // Отклонение по конечной дате
+        // Отклонение по конечной дате — только когда вся группа закрыта.
+        // Если есть операции без факта, отклонение не считаем (оно вводит в заблуждение —
+        // показывает опережение от первой закрытой операции, хотя группа не готова).
         const dev = (() => {
+          if (!allDone) return null;
           if (!endPlanAgg || !endFactAgg) return null;
           const dp = parseDate(endPlanAgg), df = parseDate(endFactAgg);
           if (!dp || !df) return null;
